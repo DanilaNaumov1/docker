@@ -1,0 +1,10 @@
+LOCAL_DATA_DIR = "/opt/airflow/data"
+LOCAL_MODELS_DIR = "/opt/airflow/models"
+LOCAL_RESULTS_DIR = "/opt/airflow/results"
+
+S3_BUCKET = "ml-bucket"
+TRAIN_DATA_PREFIX = "data/train/"
+TEST_DATA_PREFIX = "data/test/"
+MODEL_PREFIX = "models/"
+METRICS_PREFIX = "metrics/"
+INFERENCE_PREFIX = "inference/"

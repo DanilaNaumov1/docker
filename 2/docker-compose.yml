@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  zookeeper-node:
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka-bus:
+    image: confluentinc/cp-kafka:7.3.0
+    depends_on:
+      - zookeeper-node
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-node:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-bus:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  triton-engine:
+    image: nvcr.io/nvidia/tritonserver:22.12-py3
+    command: ["tritonserver", "--model-repository=/models", "--strict-model-config=false"]
+    volumes:
+      - ./models:/models
+
+  app-producer:
+    build: .
+    command: ["python", "producer.py"]
+    depends_on:
+      - kafka-bus
+    restart: on-failure 
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka-bus:9092
+      INPUT_TOPIC: task_queue
+      PYTHONUNBUFFERED: "1" 
+
+  app-worker:
+    build: .
+    command: ["python", "consumer.py"]
+    depends_on:
+      - kafka-bus
+      - triton-engine
+    restart: on-failure
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka-bus:9092
+      INPUT_TOPIC: task_queue
+      OUTPUT_TOPIC: result_queue
+      TRITON_URL: triton-engine:8001
+      PYTHONUNBUFFERED: "1" 
